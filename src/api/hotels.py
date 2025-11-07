@@ -1,6 +1,7 @@
 from fastapi import HTTPException, APIRouter, Query
 
-from schemas.shema import Hotels, HotelsPATCH, PaginatedResponse
+from src.api.dependencies import PaginationDep
+from src.schemas.hotels import Hotels, HotelsPATCH, PaginatedResponse
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -22,19 +23,22 @@ def print_hotels():
 
 @router.get("/paginated", response_model=PaginatedResponse)
 async def get_page_hotel(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(3, ge=1)
+    pagination: PaginationDep,
+    id: int | None = Query(None, description="Айдишник"),
+    title: str | None = Query(None, description="Название отеля"),
 ):
-    total = len(hotels)
-    start = (page - 1) * per_page
-    end = start + per_page
-    data = hotels[start:end]
-    return PaginatedResponse(
-        total=total,
-        page=page,
-        per_page=per_page,
-        data=data
-    )
+    hotels_ = []
+    for hotel in hotels:
+        if id and hotel["id"] != id:
+            continue
+        if title and hotel["title"] != title:
+            continue
+        hotels_.append(hotel)
+
+    if pagination.page and pagination.per_page:
+        return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
+    return hotels_
+
 
 @router.put("/{hotel_id}")
 async def update_hotel(
@@ -80,4 +84,4 @@ async def partial_update_hotel(
         
     return {"message": "Hotel partially update", "hotel": hotel}
     
-    
+
