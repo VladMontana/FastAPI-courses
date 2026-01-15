@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from src.database import Base
-from src.config import settings
+from src.core.config import settings
 from src.models.hotels import HotelsORM
 from src.models.rooms import RoomsORM
 
@@ -15,6 +15,7 @@ from src.models.rooms import RoomsORM
 config = context.config
 
 config.set_main_option("sqlalchemy.url", f"{settings.DB_URL}?async_fallback=True")
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

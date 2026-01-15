@@ -1,15 +1,6 @@
-import uvicorn
-import sys
-
-from pathlib import Path
 from fastapi import FastAPI
+from src.api.hotels import router as hotel_router
 
-from src.api.hotels import router as router_hotels
+app = FastAPI(title="Мобильное приложение API", version="0.1.0")
 
-
-app = FastAPI(version="0.0.1.2")
-app.include_router(router_hotels)
-
-sys.path.append(str(Path(__file__).parent.parent))
-
-
+app.include_router(hotel_router)

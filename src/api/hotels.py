@@ -1,7 +1,8 @@
-from fastapi import HTTPException, APIRouter, Query
+from fastapi import APIRouter, Query, Body
 
-from src.api.dependencies import PaginationDep
-from src.schemas.hotels import Hotels, HotelsPATCH, PaginatedResponse
+from src.schemas.dependencies import PaginationDep
+
+from src.schemas.hotels import PaginatedResponse, Hotels
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -16,9 +17,40 @@ hotels = [
 ]
 
 
-@router.get("/")
-def print_hotels():
-    return hotels
+@router.get("")
+async def get_hotels(
+    id: int | None = Query(None, description="Айди отеля"),
+    title: str | None = Query(None, description="Название отеля"),
+):
+    hotels_ = []
+    for hotel in hotels:
+        if id and hotel["id"] != id:
+            continue
+        if title and hotel["title"] != title:
+            continue
+        hotels_.append(hotel)
+    return hotels_ 
+
+
+@router.delete("/{hotel_id}")
+async def delete_hotel(hotel_id: int):
+    global hotels
+    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
+    return {"status": "OK"}
+
+
+@router.post("")
+async def create_hotel(
+    title: str = Body(embed=True, description="Название отеля"),
+    name: str = Body()
+):
+    global hotels
+    hotels.append({
+        "id": hotels[-1]["id"] + 1,
+        "title": title,
+        "name": name
+    })
+    return {"status": "OK"}
 
 
 @router.get("/paginated", response_model=PaginatedResponse)
@@ -40,48 +72,50 @@ async def get_page_hotel(
     return hotels_
 
 
+@router.get("/paginated_hotel")
+async def get_paginated_hotel (
+    pagination: PaginationDep,
+    id: int | None = Query(None, description="ID"),
+    title: str | None = Query(None, description="Title"),
+):
+    global hotels
+    hotels_ = []
+    for hotel in hotels:
+        if id and hotel["id"] != id:
+            continue
+        if title and hotel["title"] != title:
+            continue
+        hotels.append(hotel)
+    if pagination.page and pagination.per_page:   
+        return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
+    return hotels_
+
+
 @router.put("/{hotel_id}")
 async def update_hotel(
     hotel_id: int, 
-    hotel_data: Hotels
+    title: str = Body(),
+    name: str = Body(),
 ):  
-    if not hotel_data.title.strip():
-        raise HTTPException(400, "Title cannot be empty")
-    if not hotel_data.name.strip():
-        raise HTTPException(400, "Name cannot be empty")
+    global hotels
+    hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
+    hotel["title"] = title
+    hotel["name"] = name
     
-    hotel = next((h for h in hotels if h["id"] == hotel_id), None)
-    if not hotel:
-        raise HTTPException(400, "Hotel is not found")
-    
-    hotel["title"] = hotel_data.title.strip()
-    hotel["name"] = hotel_data.name.strip()
-    
-    return {"message": "Hotel updated", "hotel": hotel}
+    return {"status": "OK"}
 
 
 @router.patch("/{hotel_id}")
-async def partial_update_hotel(
+async def edit_hotel(
     hotel_id: int,
-    hotel_data: HotelsPATCH
+    title: str | None = Body(),
+    name: str | None = Body(),
 ):
-    if hotel_data.title is None and hotel_data.name is None:
-        raise HTTPException(400, "Title and name cannot be None")
+    global hotels
+    hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
+    if title:
+        hotel["title"] = title
+    if name:
+        hotel["name"] = name
+    return {"status": "OK"}    
     
-    if hotel_data.title is not None and not hotel_data.title.strip():
-        raise HTTPException(400, "Title cannot be empty")
-    if hotel_data.name is not None and not hotel_data.title.strip():
-        raise HTTPException(400, "Name cannot be empty")
-
-    hotel = next((h for h in hotels if h["id"] == hotel_id), None)
-    if not hotel:
-        raise HTTPException(400, "Hotel isn`t found")
-    
-    if hotel_data.title is not None:
-        hotel["title"] = hotel_data.title.strip()
-    if hotel_data.name is not None:
-        hotel["name"] = hotel_data.name.strip()
-        
-    return {"message": "Hotel partially update", "hotel": hotel}
-    
-

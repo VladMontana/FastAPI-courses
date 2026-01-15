@@ -1,15 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List
 
 class Hotels(BaseModel):
     id: int
     name: str
     title: str
-
-class HotelsPATCH(BaseModel):
-    title:  str | None = Field(None)
-    name: str | None = Field(None)
-
 
 class PaginatedResponse(BaseModel):
     total: int # сколько отелей находятся в списке
