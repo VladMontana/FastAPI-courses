@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Body
 
-from sqlalchemy import insert, select, func
+from sqlalchemy import insert
 
 from models.hotels import HotelsORM
 from src.schemas.dependencies import PaginationDep
