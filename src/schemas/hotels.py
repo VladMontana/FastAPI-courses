@@ -1,9 +1,12 @@
 from pydantic import BaseModel, Field
 
-class Hotels(BaseModel):
+class HotelAdd(BaseModel):
     title: str
     location: str
-    
+
+class Hotel(HotelAdd):
+    id: int
+
 
 class HotelsPatch(BaseModel):
     title: str | None = Field(None)
