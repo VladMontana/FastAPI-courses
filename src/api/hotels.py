@@ -1,47 +1,17 @@
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, Query
 
-from sqlalchemy import insert
-
-from models.hotels import HotelsORM
 from src.schemas.dependencies import PaginationDep
 
-from src.schemas.hotels import Hotels
+from src.schemas.hotels import Hotels, HotelsPatch
 from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepository
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
-
-@router.get("")
-async def get_hotels(
-    id: int | None = Query(None, description="Айди отеля"),
-    title: str | None = Query(None, description="Название отеля"),
-):
-    hotels_ = []
-    for hotel in hotels:
-        if id and hotel["id"] != id:
-            continue
-        if title and hotel["title"] != title:
-            continue
-        hotels_.append(hotel)
-    return hotels_ 
-
-
-@router.delete("/{hotel_id}")
-async def delete_hotel(hotel_id: int):
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
-    return {"status": "OK"}
-
-
-@router.post("")
-async def create_hotel(hotel_data: Hotels):
+@router.get("/{hotel_id}")
+async def get_hotel(hotel_id: int):
     async with async_session_maker() as session:
-        add_hotel_stmt = insert(HotelsORM).values(**hotel_data.model_dump())
-        await session.execute(add_hotel_stmt)
-        await session.commit()
-    return {"status": "OK"}
-
+        return await HotelsRepository(session).get_one_or_none(id=hotel_id)
 
 @router.get("/paginated")
 async def get_page_hotel(
@@ -57,52 +27,36 @@ async def get_page_hotel(
             limit=per_page or 5,
             offset=per_page * (pagination.page - 1)
         )
-
-
-@router.get("/paginated_hotel")
-async def get_paginated_hotel (
-    pagination: PaginationDep,
-    id: int | None = Query(None, description="ID"),
-    title: str | None = Query(None, description="Title"),
-):
-    global hotels
-    hotels_ = []
-    for hotel in hotels:
-        if id and hotel["id"] != id:
-            continue
-        if title and hotel["title"] != title:
-            continue
-        hotels.append(hotel)
-    if pagination.page and pagination.per_page:   
-        return hotels_[pagination.per_page * (pagination.page-1):][:pagination.per_page]
-    return hotels_
-
-
-@router.put("/{hotel_id}")
-async def update_hotel(
-    hotel_id: int, 
-    title: str = Body(),
-    name: str = Body(),
-):  
-    global hotels
-    hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
-    hotel["title"] = title
-    hotel["name"] = name
-    
+        
+        
+@router.delete("/{hotel_id}")
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).delete_constructor(id=hotel_id)
+        await session.commit()
     return {"status": "OK"}
 
 
+@router.post("")
+async def create_hotel(hotel_data: Hotels):
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).add_constructor(hotel_data)
+        await session.commit()
+    return {"status": "OK", "data": hotel}
+
+
+@router.put("/{hotel_id}")
+async def edit_hotel(hotel_id: int, hotel_data: Hotels):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit_constructor(hotel_data, id=hotel_id)
+        await session.commit()
+    return {"status": "OK"}   
+
+
 @router.patch("/{hotel_id}")
-async def edit_hotel(
-    hotel_id: int,
-    title: str | None = Body(),
-    name: str | None = Body(),
-):
-    global hotels
-    hotel = [hotel for hotel in hotels if hotel["id"] == hotel_id][0]
-    if title:
-        hotel["title"] = title
-    if name:
-        hotel["name"] = name
-    return {"status": "OK"}    
+async def part_edit_hotel(hotel_id: int, hotel_data: HotelsPatch):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit_constructor(hotel_data, exclude_unset=True, id=hotel_id)
+        await session.commit()
+    return {"status": "OK"}
     

@@ -1,7 +1,11 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
 
 class Hotels(BaseModel):
-    location: str
     title: str
+    location: str
+    
 
+class HotelsPatch(BaseModel):
+    title: str | None = Field(None)
+    location: str | None = Field(None)
+    

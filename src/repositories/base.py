@@ -1,5 +1,5 @@
-from sqlalchemy import select
-
+from sqlalchemy import select, insert, update, delete
+from pydantic import BaseModel
 
 class BaseRepository:
     model = None
@@ -17,4 +17,24 @@ class BaseRepository:
         result = await self.session.execute(query)
         return result.scalars().one_or_none()
     
+    async def add_constructor(self, data: BaseModel):
+        add_data = insert(self.model).values(**data.model_dump()).returning(self.model)
+        result = await self.session.execute(add_data)
+        return result.scalars().one()
     
+    async def edit_constructor(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None:
+        update_stmt = (
+            update(self.model)
+            .filter_by(**filter_by)
+            .values(**data.model_dump(exclude_unset=exclude_unset))
+        )
+        await self.session.execute(update_stmt)
+        
+    async def delete_constructor(self, **filter_by) -> None:
+        delete_stmt = delete(self.model).filter_by(**filter_by)
+        await self.session.execute(delete_stmt)
+    
+    # Patch конструктор - на всякий случай  
+    # async def patch_constructor(self, data: BaseModel, exclude_unset: bool = False, **filter_by):
+    #     patch_stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump(exclude_unset=exclude_unset))
+    #     await self.session.execute(patch_stmt)
