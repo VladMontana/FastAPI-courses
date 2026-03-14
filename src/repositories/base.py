@@ -25,7 +25,7 @@ class BaseRepository:
         add_data = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(add_data)
         model = result.scalars().one()
-        return self.schema.model_validate(model)
+        return self.schema.model_validate(model, from_attributes=True)
     
     async def edit_constructor(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None:
         update_stmt = (
@@ -40,6 +40,6 @@ class BaseRepository:
         await self.session.execute(delete_stmt)
     
     # Patch конструктор - на всякий случай  
-    # async def patch_constructor(self, data: BaseModel, exclude_unset: bool = False, **filter_by):
+    # async def patch_constructor(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None:
     #     patch_stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump(exclude_unset=exclude_unset))
     #     await self.session.execute(patch_stmt)

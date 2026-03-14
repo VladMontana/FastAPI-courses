@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     def DB_URL(self):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
     
+    JWT_SECRET_KEY: str
+    JWT_ALGORITM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    
     model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
     #extra="ignore" - это игнорирование лишних значений в .env
 settings = Settings()
