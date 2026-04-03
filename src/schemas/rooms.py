@@ -18,7 +18,8 @@ class RoomAddRequest(BaseModel):
     title: str
     description: str | None = Field(None)
     price: int
-    quantity: int
+    quanlity: int
+    facilities_ids: list[int] | None = None
     
 
 class RoomPatchRequest(BaseModel):
