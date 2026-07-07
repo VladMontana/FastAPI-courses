@@ -1,16 +1,29 @@
 from datetime import date
 
-from models.rooms import RoomsORM
-from repositories.utils import rooms_ids_for_booking
+from sqlalchemy import select
+
+from src.models.rooms import RoomsORM
+from src.repositories.mapper.mappers import BookingDataMapper
+from src.repositories.utils import rooms_ids_for_booking
 from src.repositories.base import BaseRepository
 
 from src.models.bookings import BookingsOrm
-from src.schemas.bookings import Booking
 
 class BookingsRepository(BaseRepository):
     model = BookingsOrm
-    schema = Booking
+    mapper = BookingDataMapper
 
     async def get_filtered_rooms(self, hotel_id: int, date_from: date, date_to: date) -> int:
         query = rooms_ids_for_booking(date_from, date_to, hotel_id)
         return await self.get_filtered(RoomsORM.id.in_(query))
+    
+    
+    async def get_bookings_with_today_checkin(self):
+        query = (
+            select(BookingsOrm)
+            .filter(BookingsOrm.date_from == date.today())
+        )
+        res = await self.session.execute(query)
+        return [self.mapper.map_to_domain_entity(booking) for booking in res.scalars().all()]
+        
+        

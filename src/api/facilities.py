@@ -1,7 +1,10 @@
 from fastapi import APIRouter
+from redis import RedisError
 
-from src.schemas.facilities import FacilityAddRequest, FacilityAdd
+from src.connectors.redis_manager import redis_manager
+from src.schemas.facilities import FacilityAdd
 from src.core.dependencies import DBDep
+from src.utils.json_converter import to_json, from_json
 
 router = APIRouter(prefix="/facilities", tags=["Удобства"])
 
@@ -9,12 +12,37 @@ router = APIRouter(prefix="/facilities", tags=["Удобства"])
 async def create_facility(db: DBDep, data: FacilityAdd):
     facility = await db.facilities.add_constructor(data)
     await db.commit()
-    return {"status": "OK", "data": facility}
+    
+    try:
+        await redis_manager.delete("facilities")
+    except RedisError:
+        pass
+    
+    return facility
 
 @router.get("")
 async def get_facilities(db: DBDep):
-    return await db.facilities.get_all()
+    try:
+        facilities_from_cache = await redis_manager.get("facilities")
+    except RedisError:
+        facilities_from_cache = None
+        
+    if facilities_from_cache is not None:
+        return from_json(facilities_from_cache)
     
+    facilities = await db.facilities.get_all()
+    
+    facilities_schemas = [f.model_dump() for f in facilities]
+    facilities_json = to_json(facilities_schemas)
+    
+    try:
+        await redis_manager.set("facilities", facilities_json, expire=3600)
+    except RedisError:
+        pass
+    
+    return facilities
+    
+        
 
 @router.get("/{facility_id}")
 async def get_facility(facility_id: int, db: DBDep):

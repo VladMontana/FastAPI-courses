@@ -29,7 +29,7 @@ async def add_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddReq
         date_from=booking_data.date_from, 
         date_to=booking_data.date_to
     )
-    if booked_count >= room.quantity:
+    if booked_count >= room.quanlity:
         raise HTTPException(status_code=400, detail="Комната уже забронирована")
 
     payload = BookingAdd(

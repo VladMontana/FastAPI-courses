@@ -1,7 +1,7 @@
 from datetime import date
 from sqlalchemy import select, func
 
-from models.rooms import RoomsORM
+from src.models.rooms import RoomsORM
 from src.models.bookings import BookingsOrm
 
 
@@ -20,7 +20,7 @@ def rooms_ids_for_booking(date_from: date, date_to: date, hotel_id: int | None =
     rooms_left_table = (
         select(
             RoomsORM.id.label("room_id"),
-            (RoomsORM.quanlity - func.coalesce(rooms_count.c.rooms_booked, 0)).label("rooms_left"),
+            (RoomsORM.quantity - func.coalesce(rooms_count.c.rooms_booked, 0)).label("rooms_left"),
         )
         .select_from(RoomsORM)
         .outerjoin(rooms_count, RoomsORM.id == rooms_count.c.room_id)
@@ -38,7 +38,7 @@ def rooms_ids_for_booking(date_from: date, date_to: date, hotel_id: int | None =
         .subquery(name="rooms_ids_for_hotel")
     )
     rooms_ids_to_get = (
-        select(rooms_left_table)
+        select(rooms_left_table.c.room_id)
         .select_from(rooms_left_table)
         .filter(
             rooms_left_table.c.rooms_left > 0,
