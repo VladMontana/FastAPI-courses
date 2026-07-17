@@ -7,7 +7,8 @@ from src.repositories.base import BaseRepository
 from src.models.hotels import HotelsORM
 from src.schemas.hotels import Hotel
 
-class HotelsRepository(BaseRepository):
+
+class HotelsRepository(BaseRepository[HotelsORM, Hotel]):
     model = HotelsORM
     mapper = HotelDataMapper
 
@@ -37,5 +38,6 @@ class HotelsRepository(BaseRepository):
         query = query.limit(limit).offset(offset)
         result = await self.session.execute(query)
 
-        return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
-
+        return [
+            self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()
+        ]

@@ -1,6 +1,7 @@
 import orjson
 from typing import Any
 
+
 def to_json(value: Any) -> str:
     """
     Преобразует Python-объект в JSON-строку.
@@ -13,7 +14,7 @@ def to_json(value: Any) -> str:
     :return: JSON-строка.
     """
     return orjson.dumps(value).decode("utf-8")
-    
+
 
 def from_json(value: str | None) -> Any | None:
     """
@@ -27,5 +28,5 @@ def from_json(value: str | None) -> Any | None:
     """
     if value is None:
         return None
-    
+
     return orjson.loads(value)

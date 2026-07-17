@@ -12,6 +12,7 @@ from src.api.images import router as images_router
 from src.connectors.redis_manager import redis_manager
 from src.connectors.fastapi_cache_manager import fastapi_cache_manager
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await redis_manager.connect()
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
     await redis_manager.close()
     await fastapi_cache_manager.close()
+
 
 app = FastAPI(version="0.1.0", lifespan=lifespan)
 

@@ -4,11 +4,7 @@ from celery.schedules import crontab
 from src.core.config import settings
 
 celery_instance = Celery(
-    "tasks",
-    broker=settings.REDIS_URL,
-    include=[
-        "src.tasks.tasks"
-    ]
+    main="tasks", broker=settings.REDIS_URL, include=["src.tasks.tasks"]
 )
 
 celery_instance.conf.update(
@@ -16,14 +12,11 @@ celery_instance.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    
     # Временная зона
     timezone="Europe/Moscow",
     enable_utc=True,
-    
     # Повторные попытки при сбое брокера
     broker_connection_retry_on_startup=True,
-
     # Время жизни результата задачи (в секундах)
     result_expires=3600,
 )

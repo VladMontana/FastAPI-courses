@@ -60,7 +60,7 @@ class FastAPICacheManager:
         Закрывает Redis-соединение, которое используется fastapi-cache2.
         """
         if self.client is not None:
-            await self.client.aclose()
+            await self.client.close()
             self.client = None
 
 

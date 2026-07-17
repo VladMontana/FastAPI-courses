@@ -1,10 +1,11 @@
 import asyncio
 from pathlib import Path
-from PIL import Image # type: ignore
+from PIL import Image
 
 from src.tasks.celery_app import celery_instance
 from src.utils.db_manager import DBManager
 from src.database import async_session_maker_null_pool
+
 
 @celery_instance.task
 def compress_image_to_sizes(
@@ -30,32 +31,24 @@ def compress_image_to_sizes(
     Returns:
         Список путей к сохранённым изображениям.
     """
-    image_path = Path(image_path)
-    output_dir = Path(output_dir)
+    sourse_path = Path(image_path)
+    destination_dir = Path(output_dir)
 
     saved_files = []
-    
-    with Image.open(image_path) as img:
-        img = img.convert("RGB")
+
+    with Image.open(sourse_path) as sourse_image:
+        img = sourse_image.convert("RGB")
 
         original_width, original_height = img.size
 
         for width in widths:
             height = int(original_height * width / original_width)
 
-            resized_img = img.resize(
-                (width, height),
-                Image.Resampling.LANCZOS
-            )
+            resized_img = img.resize((width, height), Image.Resampling.LANCZOS)
 
-            output_path = output_dir / f"{image_path.stem}_{width}px.jpg"
+            output_path = destination_dir / f"{sourse_path.stem}_{width}px.jpg"
 
-            resized_img.save(
-                output_path,
-                format="JPEG",
-                quality=quality,
-                optimize=True
-            )
+            resized_img.save(output_path, format="JPEG", quality=quality, optimize=True)
 
             saved_files.append(output_path)
 
@@ -65,9 +58,8 @@ def compress_image_to_sizes(
 async def get_bookings_with_today_checkin_helper():
     async with DBManager(session_factory=async_session_maker_null_pool) as db:
         await db.bookings.get_bookings_with_today_checkin()
-    
+
 
 @celery_instance.task(name="booking_today_checkin")
 def send_email_to_users_with_today_checkin():
     asyncio.run(get_bookings_with_today_checkin_helper())
-
