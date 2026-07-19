@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException
 
 from src.schemas.bookings import BookingAddRequest, BookingAdd
 from src.core.dependencies import DBDep, UserIdDep
-from src.utils.exception import RoomFullyBookedException
+from src.exception import (
+    RoomFullyBookedException,
+    RoomNotFoundException
+)
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование"])
 
@@ -24,10 +27,10 @@ async def add_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddReq
             status_code=400, detail="Дата заезда не может быть больше даты выезда"
         )
 
-    room = await db.rooms.get_one_or_none(id=booking_data.room_id)
-    if room is None:
-        raise HTTPException(status_code=404, detail="Комната не найдена")
-
+    try:
+        room = await db.rooms.get_room_by_id(id=booking_data.room_id)
+    except RoomNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.detail)
     payload = BookingAdd(
         user_id=user_id,
         room_id=booking_data.room_id,
@@ -38,7 +41,7 @@ async def add_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddReq
 
     try:
         booking = await db.bookings.add_booking(payload)
-        await db.commit()
-        return {"status": "OK", "booking": booking}
     except RoomFullyBookedException as e:
         raise HTTPException(status_code=409, detail=e.detail)
+    await db.commit()
+    return {"status": "OK", "booking": booking}

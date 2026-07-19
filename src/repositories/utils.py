@@ -10,8 +10,8 @@ def rooms_ids_for_booking(date_from: date, date_to: date, hotel_id: int | None =
         select(BookingsOrm.room_id, func.count("*").label("rooms_booked"))
         .select_from(BookingsOrm)
         .filter(
-            BookingsOrm.date_from <= date_to,
-            BookingsOrm.date_to >= date_from,
+            BookingsOrm.date_from < date_to,
+            BookingsOrm.date_to > date_from,
         )
         .group_by(BookingsOrm.room_id)
         .cte(name="rooms_booked")

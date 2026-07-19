@@ -8,7 +8,7 @@ from src.repositories.utils import rooms_ids_for_booking
 from src.repositories.base import BaseRepository
 from src.schemas.bookings import Booking, BookingAdd
 from src.models.bookings import BookingsOrm
-from src.utils.exception import RoomFullyBookedException
+from src.exception import RoomFullyBookedException
 
 
 class BookingsRepository(BaseRepository[BookingsOrm, Booking]):
@@ -41,6 +41,6 @@ class BookingsRepository(BaseRepository[BookingsOrm, Booking]):
         room = result.scalars().one_or_none()
 
         if room is None:
-            raise RoomFullyBookedException
+            raise RoomFullyBookedException()
 
         return await self.add_constructor(booking_data)

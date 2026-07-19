@@ -5,7 +5,9 @@ from pydantic import BaseModel
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.exc import DBAPIError, NoResultFound
 
+from src.exception import ObjectNotFoundException
 from src.database import Base
 from src.repositories.mapper.base import DataMapper
 
@@ -42,6 +44,15 @@ class BaseRepository(Generic[ModelType, SchemaType]):
             return None
         return self.mapper.map_to_domain_entity(model)
 
+    async def get_one(self, **filter_by: Any) -> SchemaType:
+        query = select(self.model).filter_by(**filter_by)
+        try:
+            result = await self.session.execute(query)
+            model = result.scalar_one()
+            return self.mapper.map_to_domain_entity(model)
+        except NoResultFound:
+            raise ObjectNotFoundException
+        
     async def add_constructor(self, data: BaseModel) -> SchemaType:
         add_data = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(add_data)
