@@ -22,10 +22,8 @@ class UsersRepository(BaseRepository[UsersORM, User]):
 
         return UserWithHashedPassword.model_validate(obj=model, from_attributes=True)
 
-
     async def add_user(self, new_user_data: UserAdd):
         try:
             return await self.add_constructor(new_user_data)
         except IntegrityError:
             raise UserAlreadyExistsException()
-        

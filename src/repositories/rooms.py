@@ -40,19 +40,16 @@ class RoomsRepository(BaseRepository[RoomsORM, Room]):
         if model is None:
             return None
         return RoomDataWithRelsMapper.map_to_domain_entity(model)
-    
-    
+
     async def get_room(self, hotel_id: int, id: int):
         room = await self.get_one_or_none_with_rels(hotel_id=hotel_id, id=id)
         if room is None:
             raise RoomNotFoundException()
-        else: 
+        else:
             return room
-        
-        
+
     async def get_room_by_id(self, id: int):
         try:
             return await self.get_one(id=id)
         except ObjectNotFoundException:
             raise RoomNotFoundException()
-        

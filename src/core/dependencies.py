@@ -3,7 +3,7 @@ from fastapi import Depends, Query, Request, HTTPException
 from pydantic import BaseModel
 
 from src.utils.db_manager import DBManager
-from src.services.auth import AuthService
+from src.services.jwt_service import JWTService
 from src.database import async_session_maker
 
 
@@ -24,7 +24,7 @@ def get_token(request: Request):
 
 
 def get_current_user_id(token: str = Depends(get_token)):
-    data = AuthService().decode_token(token)
+    data = JWTService().decode_token(token)
     return data["user_id"]
 
 

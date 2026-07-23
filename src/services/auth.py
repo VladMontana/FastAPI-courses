@@ -1,35 +1,27 @@
-from datetime import datetime, timezone, timedelta
-from passlib.context import CryptContext
-from fastapi import HTTPException
-import jwt
-
-from src.core.config import settings
+from src.services.jwt_service import JWTService
+from src.services.base import BaseService
+from src.schemas.users import UserRequestAdd, UserAdd, UserRequest
+from src.exception import UserEmailAlreadyExistsException, InvalidPasswordException
 
 
-class AuthService:
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-    def create_access_token(self, data: dict) -> str:
-        to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+class AuthService(BaseService):
+    async def register_user(self, data: UserRequestAdd):
+        hashed_password = JWTService().hash_password(data.password)
+        new_user_data = UserAdd(
+            email=data.email, hashed_password=hashed_password, username=data.username
         )
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(
-            to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITM
-        )
-        return encoded_jwt
+        await self.db.users.add_user(new_user_data)
+        await self.db.commit()
 
-    def hash_password(self, password: str) -> str:
-        return self.pwd_context.hash(password)
+    async def login_user(self, data: UserRequest):
+        user = await self.db.users.get_user_with_hashed_password(email=data.email)
+        if not user:
+            raise UserEmailAlreadyExistsException()
+        if not JWTService().verify_password(data.password, user.hashed_password):
+            raise InvalidPasswordException()
+        access_token = JWTService().create_access_token({"user_id": user.id})
 
-    def verify_password(self, plain_password, hashed_password):
-        return self.pwd_context.verify(plain_password, hashed_password)
+        return access_token
 
-    def decode_token(self, token: str) -> dict:
-        try:
-            return jwt.decode(
-                token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITM
-            )
-        except jwt.exceptions.DecodeError:
-            raise HTTPException(status_code=401)
+    async def get_me(self, user_id: int):
+        return await self.db.users.get_one_or_none(id=user_id)

@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: booking_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - booking_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.6-alpine
+    container_name: booking_redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - booking_redis_data:/data
+
+    command: redis-server --appendonly yes
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  booking_back_service:
+    container_name: booking_back
+
+    build:
+      context: .
+
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+
+    ports:
+      - "7777:8000"
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  booking_celery_worker_service:
+    container_name: booking_celery_worker
+
+    build:
+      context: .
+
+    command: celery --app=src.tasks.celery_app:celery_instance worker -l INFO
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  booking_celery_beat_service:
+    container_name: booking_celery_beat
+
+    build:
+      context: .
+
+    command: celery --app=src.tasks.celery_app:celery_instance beat -l INFO
+
+    env_file:
+      - .env
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+volumes:
+  booking_postgres_data:
+  booking_redis_data:

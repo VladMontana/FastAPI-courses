@@ -8,6 +8,7 @@ from src.models.hotels import HotelsORM
 from src.schemas.hotels import Hotel
 from src.exception import ObjectNotFoundException, HotelNotFoundException
 
+
 class HotelsRepository(BaseRepository[HotelsORM, Hotel]):
     model = HotelsORM
     mapper = HotelDataMapper
@@ -42,10 +43,8 @@ class HotelsRepository(BaseRepository[HotelsORM, Hotel]):
             self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()
         ]
 
-    
     async def get_hotel(self, hotel_id: int):
         try:
             return await self.get_one(id=hotel_id)
         except ObjectNotFoundException:
             raise HotelNotFoundException()
-        
